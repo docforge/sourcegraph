@@ -854,7 +854,10 @@ func ProcessAndOr(in string, options ParserOptions) (QueryInfo, error) {
 	}
 
 	if options.Globbing {
-		query = Map(query, globToRegex)
+		query, err = mapGlobToRegex(query)
+		if err!=nil {
+			return nil, err
+		}
 	}
 
 	query = Map(query, LowercaseFieldNames, SubstituteAliases)
