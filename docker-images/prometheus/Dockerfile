@@ -1,4 +1,4 @@
-FROM golang:1.13-alpine@sha256:ed003971a4809c9ae45afe2d318c24b9e3f6b30864a322877c69a46c504d852c AS builder
+FROM golang:1.14-alpine@sha256:a70d1bc956c6575a1b0424e959624ca52c337e2c4ff56c0989ee491c0edbb2ea AS builder
 
 COPY monitoring /go/src/monitoring-generator
 WORKDIR /go/src/monitoring-generator
