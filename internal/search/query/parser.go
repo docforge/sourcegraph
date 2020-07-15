@@ -575,6 +575,15 @@ func partitionParameters(nodes []Node) []Node {
 	return newOperator(append(unorderedParams, patterns...), And)
 }
 
+// mergePatterns extends the left pattern with the right pattern, appropriately
+// updating the ranges and annotations.
+func mergePatterns(left, right Pattern) Pattern {
+	left.Value += right.Value
+	left.Annotation.Labels |= right.Annotation.Labels
+	left.Annotation.Range.End.Column += len(right.Value)
+	return left
+}
+
 // parseParameterParameterList scans for consecutive leaf nodes.
 func (p *parser) parseParameterList() ([]Node, error) {
 	var nodes []Node
@@ -592,9 +601,12 @@ loop:
 			if isSet(p.heuristics, parensAsPatterns) {
 				if value, advance, ok := ScanBalancedPatternLiteral(p.buf[p.pos:]); ok {
 					pattern := Pattern{
-						Value:      value,
-						Negated:    false,
-						Annotation: Annotation{Labels: Regexp},
+						Value:   value,
+						Negated: false,
+						Annotation: Annotation{
+							Labels: Regexp,
+							Range:  newRange(p.pos, p.pos+advance),
+						},
 					}
 
 					// Merge when a pattern like foo()bar is parsed as (concat "foo" "()bar")
@@ -603,10 +615,9 @@ loop:
 						if r, _ := utf8.DecodeRune([]byte{p.buf[p.pos-1]}); !unicode.IsSpace(r) {
 							if len(nodes) > 0 {
 								if previous, ok := nodes[len(nodes)-1].(Pattern); ok {
-									previous.Value += pattern.Value
 									previous.Annotation.Labels = Regexp | HeuristicParensAsPatterns
+									nodes[len(nodes)-1] = mergePatterns(previous, pattern)
 									p.pos += advance
-									nodes[len(nodes)-1] = previous
 									continue
 								}
 							}
