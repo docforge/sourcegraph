@@ -60,6 +60,11 @@ type CreateCampaignSpecArgs struct {
 	ChangesetSpecs []graphql.ID
 }
 
+type ChangesetSpecsConnectionArgs struct {
+	First *int32
+	After *string
+}
+
 type CampaignsResolver interface {
 	// Mutations
 	CreateCampaign(ctx context.Context, args *CreateCampaignArgs) (CampaignResolver, error)
@@ -86,23 +91,51 @@ type CampaignSpecResolver interface {
 
 	OriginalInput() (string, error)
 	ParsedInput() (JSONValue, error)
-	ChangesetSpecs(context.Context) ([]ChangesetSpecResolver, error)
+	ChangesetSpecs(ctx context.Context, args *ChangesetSpecsConnectionArgs) (ChangesetSpecConnectionResolver, error)
+
+	Description() CampaignDescriptionResolver
 
 	Creator(context.Context) (*UserResolver, error)
-	CreatedAt() *DateTime
+	CreatedAt() DateTime
 	Namespace(context.Context) (*NamespaceResolver, error)
 
 	ExpiresAt() *DateTime
 
 	PreviewURL() (string, error)
+
+	ViewerCanAdminister() bool
+}
+
+type CampaignDescriptionResolver interface {
+	Name() string
+	Description() string
+}
+
+type ChangesetSpecConnectionResolver interface {
+	TotalCount(ctx context.Context) (int32, error)
+	PageInfo(ctx context.Context) (*graphqlutil.PageInfo, error)
+	Nodes(ctx context.Context) ([]ChangesetSpecResolver, error)
 }
 
 type ChangesetSpecResolver interface {
 	ID() graphql.ID
 
-	Description() ChangesetDescription
+	Type() campaigns.ChangesetSpecType
 
 	ExpiresAt() *DateTime
+
+	ToHiddenChangesetSpec() (HiddenChangesetSpecResolver, bool)
+	ToVisibleChangesetSpec() (VisibleChangesetSpecResolver, bool)
+}
+
+type HiddenChangesetSpecResolver interface {
+	ChangesetSpecResolver
+}
+
+type VisibleChangesetSpecResolver interface {
+	ChangesetSpecResolver
+
+	Description(ctx context.Context) (ChangesetDescription, error)
 }
 
 type ChangesetDescription interface {
@@ -111,20 +144,22 @@ type ChangesetDescription interface {
 }
 
 type ExistingChangesetReferenceResolver interface {
-	BaseRepository() graphql.ID
+	BaseRepository() *RepositoryResolver
 	ExternalID() string
 }
 
 type GitBranchChangesetDescriptionResolver interface {
-	BaseRepository() graphql.ID
+	BaseRepository() *RepositoryResolver
 	BaseRef() string
 	BaseRev() string
 
-	HeadRepository() graphql.ID
+	HeadRepository() *RepositoryResolver
 	HeadRef() string
 
 	Title() string
 	Body() string
+
+	Diff(ctx context.Context) (*RepositoryComparisonResolver, error)
 
 	Commits() []GitCommitDescriptionResolver
 
