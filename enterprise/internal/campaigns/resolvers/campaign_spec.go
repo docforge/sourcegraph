@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"time"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
@@ -97,7 +96,5 @@ func (r *campaignSpecResolver) CreatedAt() *graphqlbackend.DateTime {
 }
 
 func (r *campaignSpecResolver) ExpiresAt() *graphqlbackend.DateTime {
-	// TODO: This is a bogus value and needs to be implemented properly
-	expiresAt := r.campaignSpec.CreatedAt.Add(2 * time.Hour)
-	return &graphqlbackend.DateTime{Time: expiresAt}
+	return &graphqlbackend.DateTime{Time: r.campaignSpec.ExpiresAt()}
 }
